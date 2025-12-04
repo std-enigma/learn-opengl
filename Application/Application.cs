@@ -8,9 +8,21 @@ using Silk.NET.Windowing;
 
 internal class Application
 {
-    private uint _vao1;
-    private uint _vao2;
+    private uint _vao;
     private uint _program;
+
+    private Vector3D<float> currentColor = new(1f, 0f, 0f);
+    private Vector3D<float> targetColor = new(0.4f, 0.3f, 0.6f);
+    private const float transitionSpeed = 0.5f;
+    private readonly Random rng = new();
+    private readonly Vector3D<float>[] palette = new[]
+    {
+        new Vector3D<float>(1f, 0.5f, 0.2f), // orange
+        new Vector3D<float>(1f, 1f, 0.2f), // yellow
+        new Vector3D<float>(0.2f, 0.6f, 1f), // blue
+        new Vector3D<float>(0.7f, 0.2f, 1f), // purple
+        new Vector3D<float>(0.2f, 1f, 0.4f), // aqua green
+    };
 
     private GL? _gl;
     private readonly IWindow _window;
@@ -38,81 +50,20 @@ internal class Application
         _gl = _window.CreateOpenGL();
         _gl.ClearColor(Color.CornflowerBlue);
 
-        const uint posLoc = 0;
+        _vao = _gl.GenVertexArray();
+        _gl.BindVertexArray(_vao);
 
-        _vao1 = _gl.GenVertexArray();
-        _gl.BindVertexArray(_vao1);
+        var vbo = _gl.GenBuffer();
+        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
 
-        var vbo1 = _gl.GenBuffer();
-        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo1);
-
-        var vertices1 = new float[]
-        {
-            // first triangle
-            -0.9f,
-            -0.5f,
-            0.0f, // left
-            -0.0f,
-            -0.5f,
-            0.0f, // right
-            -0.45f,
-            0.5f,
-            0.0f, // top
-        };
-        fixed (float* buf = vertices1)
+        var vertices = new float[] { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
+        fixed (float* buf = vertices)
             _gl.BufferData(
                 BufferTargetARB.ArrayBuffer,
-                (nuint)(vertices1.Length * sizeof(float)),
+                (nuint)(vertices.Length * sizeof(float)),
                 buf,
                 BufferUsageARB.StaticDraw
             );
-
-        _gl.EnableVertexAttribArray(posLoc);
-        _gl.VertexAttribPointer(
-            posLoc,
-            3,
-            VertexAttribPointerType.Float,
-            false,
-            3 * sizeof(float),
-            (void*)0
-        );
-
-        _vao2 = _gl.GenVertexArray();
-        _gl.BindVertexArray(_vao2);
-
-        var vbo2 = _gl.GenBuffer();
-        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo2);
-
-        var vertices2 = new float[]
-        {
-            // second triangle
-            0.0f,
-            -0.5f,
-            0.0f, // left
-            0.9f,
-            -0.5f,
-            0.0f, // right
-            0.45f,
-            0.5f,
-            0.0f, // top
-        };
-        fixed (float* buf = vertices2)
-            _gl.BufferData(
-                BufferTargetARB.ArrayBuffer,
-                (nuint)(vertices2.Length * sizeof(float)),
-                buf,
-                BufferUsageARB.StaticDraw
-            );
-
-        _gl.EnableVertexAttribArray(posLoc);
-        _gl.VertexAttribPointer(
-            posLoc,
-            3,
-            VertexAttribPointerType.Float,
-            false,
-            3 * sizeof(float),
-            (void*)0
-        );
 
         var vertCode =
             @"
@@ -136,10 +87,11 @@ internal class Application
             @"
             #version 330 core
 
+            uniform vec3 uColor;
             out vec4 FragColor;
 
             void main() {
-                FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+                FragColor = vec4(uColor, 1.0f);
             }
             ";
         var frag = _gl.CreateShader(ShaderType.FragmentShader);
@@ -164,6 +116,17 @@ internal class Application
         _gl.DeleteShader(vert);
         _gl.DeleteShader(frag);
 
+        const uint posLoc = 0;
+        _gl.EnableVertexAttribArray(posLoc);
+        _gl.VertexAttribPointer(
+            posLoc,
+            3,
+            VertexAttribPointerType.Float,
+            false,
+            3 * sizeof(float),
+            (void*)0
+        );
+
         _gl.BindVertexArray(0);
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
     }
@@ -171,13 +134,20 @@ internal class Application
     // Render loop
     private void OnRender(double deltaTime)
     {
-        _gl?.Clear(ClearBufferMask.ColorBufferBit);
+        if (_gl is null)
+            return;
 
-        _gl?.UseProgram(_program);
-        _gl?.BindVertexArray(_vao1);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
-        _gl?.BindVertexArray(_vao2);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
+
+        _gl.UseProgram(_program);
+        currentColor = Vector3D.Lerp(currentColor, targetColor, (float)deltaTime * transitionSpeed);
+        if (Vector3D.Distance(currentColor, targetColor) < 0.02f)
+            targetColor = palette[rng.Next(palette.Length)];
+        var vertColorUniform = _gl.GetUniformLocation(_program, "uColor");
+        _gl.Uniform3(vertColorUniform, currentColor.ToSystem());
+
+        _gl.BindVertexArray(_vao);
+        _gl.DrawArrays(PrimitiveType.Triangles, 0, 3);
     }
 
     // Handle window resizing
