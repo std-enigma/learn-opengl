@@ -28,8 +28,8 @@ internal class Application
     private void OnLoad()
     {
         var input = _window.CreateInput();
-        for (int i = 0; i < input.Keyboards.Count; i++)
-            input.Keyboards[i].KeyDown += OnKeyDown;
+        foreach (var keyboard in input.Keyboards)
+            keyboard.KeyDown += OnKeyDown;
 
         _gl = _window.CreateOpenGL();
         _gl.ClearColor(Color.CornflowerBlue);
