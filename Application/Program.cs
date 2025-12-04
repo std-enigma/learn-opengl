@@ -1,4 +1,4 @@
-﻿namespace Application;
+namespace Application;
 
 internal static class Program
 {
