@@ -43,7 +43,29 @@ internal class Application
         var vbo = _gl.GenBuffer();
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
 
-        var vertices = new float[] { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
+        var vertices = new float[]
+        {
+            // first triangle
+            -0.9f,
+            -0.5f,
+            0.0f, // left
+            -0.0f,
+            -0.5f,
+            0.0f, // right
+            -0.45f,
+            0.5f,
+            0.0f, // top
+            // second triangle
+            0.0f,
+            -0.5f,
+            0.0f, // left
+            0.9f,
+            -0.5f,
+            0.0f, // right
+            0.45f,
+            0.5f,
+            0.0f, // top
+        };
         fixed (float* buf = vertices)
             _gl.BufferData(
                 BufferTargetARB.ArrayBuffer,
@@ -124,7 +146,7 @@ internal class Application
 
         _gl?.UseProgram(_program);
         _gl?.BindVertexArray(_vao);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
+        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 6);
     }
 
     // Handle window resizing
