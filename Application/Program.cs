@@ -4,6 +4,7 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        Console.WriteLine("Hello World!");
+        var app = new App("LearnOpenGL", 1280, 720);
+        app.Run();
     }
 }
