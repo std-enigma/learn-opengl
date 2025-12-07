@@ -47,7 +47,11 @@ public class App
         var vbo = _gl.GenBuffer();
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
 
-        var vertices = new[] { 0.0f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f };
+        var vertices = new[]
+        {
+            -0.5f, 0.0f, 0.0f, -0.25f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f
+        };
         fixed (float* bufData = vertices)
         {
             _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), bufData,
@@ -119,6 +123,7 @@ public class App
         _gl?.UseProgram(_program);
         _gl?.BindVertexArray(_vao);
         _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
+        _gl?.DrawArrays(PrimitiveType.Triangles, 3, 3);
     }
 
     private void OnResize(Vector2D<int> newSize)
