@@ -11,8 +11,7 @@ public class App
     private readonly IWindow _window;
 
     private GL? _gl;
-    private uint _program1;
-    private uint _program2;
+    private uint _program;
     private uint _vao;
 
     public App(string title, int width, int height)
@@ -48,14 +47,20 @@ public class App
         var vbo = _gl.GenBuffer();
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
 
-        var vertices = new[]
-        {
-            -0.5f, 0.0f, 0.0f, -0.25f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f
-        };
+        var vertices = new[] { -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
         fixed (float* bufData = vertices)
         {
             _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), bufData,
+                BufferUsageARB.StaticDraw);
+        }
+
+        var ebo = _gl.GenBuffer();
+        _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo);
+
+        var indices = new[] { 0u, 1u, 2u, 1u, 2u, 3u };
+        fixed (uint* bufData = indices)
+        {
+            _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indices.Length * sizeof(uint)), bufData,
                 BufferUsageARB.StaticDraw);
         }
 
@@ -77,82 +82,53 @@ public class App
         if (vStatus != (int)GLEnum.True)
             throw new Exception("Vertex shader has failed to compile: " + _gl.GetShaderInfoLog(vert));
 
-        const string fragCode1 = """
-                                 #version 330 core
+        const string fragCode = """
+                                #version 330 core
 
-                                 out vec4 FragColor;
+                                out vec4 FragColor;
 
-                                 void main()
-                                 {
-                                     FragColor = vec4(0.4, 0.3, 0.6, 1.0);
-                                 }
-                                 """;
+                                void main()
+                                {
+                                    FragColor = vec4(0.4, 0.3, 0.6, 1.0);
+                                }
+                                """;
 
-        const string fragCode2 = """
-                                 #version 330 core
+        var frag = _gl.CreateShader(ShaderType.FragmentShader);
+        _gl.ShaderSource(frag, fragCode);
+        _gl.CompileShader(frag);
+        _gl.GetShader(frag, ShaderParameterName.CompileStatus, out var fStatus);
+        if (fStatus != (int)GLEnum.True)
+            throw new Exception("Fragment shader has failed to compile: " + _gl.GetShaderInfoLog(frag));
 
-                                 out vec4 FragColor;
-
-                                 void main()
-                                 {
-                                     FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-                                 }
-                                 """;
-
-        var frag1 = _gl.CreateShader(ShaderType.FragmentShader);
-        _gl.ShaderSource(frag1, fragCode1);
-        _gl.CompileShader(frag1);
-        _gl.GetShader(frag1, ShaderParameterName.CompileStatus, out var fStatus1);
-        if (fStatus1 != (int)GLEnum.True)
-            throw new Exception("Fragment shader (1) has failed to compile: " + _gl.GetShaderInfoLog(frag1));
-
-        var frag2 = _gl.CreateShader(ShaderType.FragmentShader);
-        _gl.ShaderSource(frag2, fragCode2);
-        _gl.CompileShader(frag2);
-        _gl.GetShader(frag2, ShaderParameterName.CompileStatus, out var fStatus2);
-        if (fStatus2 != (int)GLEnum.True)
-            throw new Exception("Fragment shader (2) has failed to compile: " + _gl.GetShaderInfoLog(frag2));
-
-        _program1 = _gl.CreateProgram();
-        _gl.AttachShader(_program1, vert);
-        _gl.AttachShader(_program1, frag1);
-        _gl.LinkProgram(_program1);
-        _gl.GetProgram(_program1, ProgramPropertyARB.LinkStatus, out var lStatus1);
-        if (lStatus1 != (int)GLEnum.True)
-            throw new Exception("Shader program (1) failed to link: " + _gl.GetProgramInfoLog(_program1));
-
-        _program2 = _gl.CreateProgram();
-        _gl.AttachShader(_program2, vert);
-        _gl.AttachShader(_program2, frag2);
-        _gl.LinkProgram(_program2);
-        _gl.GetProgram(_program2, ProgramPropertyARB.LinkStatus, out var lStatus2);
-        if (lStatus2 != (int)GLEnum.True)
-            throw new Exception("Shader program (2) failed to link: " + _gl.GetProgramInfoLog(_program2));
+        _program = _gl.CreateProgram();
+        _gl.AttachShader(_program, vert);
+        _gl.AttachShader(_program, frag);
+        _gl.LinkProgram(_program);
+        _gl.GetProgram(_program, ProgramPropertyARB.LinkStatus, out var lStatus);
+        if (lStatus != (int)GLEnum.True)
+            throw new Exception("Shader program failed to link: " + _gl.GetProgramInfoLog(_program));
 
         const int posLoc = 0;
         _gl.EnableVertexAttribArray(posLoc);
         _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
 
-        _gl.DetachShader(_program1, vert);
-        _gl.DetachShader(_program1, frag1);
-        _gl.DetachShader(_program2, frag2);
+        _gl.DetachShader(_program, vert);
+        _gl.DetachShader(_program, frag);
         _gl.DeleteShader(vert);
-        _gl.DeleteShader(frag1);
-        _gl.DeleteShader(frag2);
+        _gl.DeleteShader(frag);
 
         _gl.BindVertexArray(0);
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+        _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
     }
 
-    private void OnRender(double deltaTime)
+    private unsafe void OnRender(double deltaTime)
     {
         _gl?.Clear(ClearBufferMask.ColorBufferBit);
 
+        _gl?.UseProgram(_program);
         _gl?.BindVertexArray(_vao);
-        _gl?.UseProgram(_program1);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
-        _gl?.UseProgram(_program2);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 3, 3);
+        _gl?.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
     }
 
     private void OnResize(Vector2D<int> newSize)
