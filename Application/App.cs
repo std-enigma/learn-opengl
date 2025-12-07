@@ -24,6 +24,7 @@ public class App
         _window = Window.Create(options);
         _window.Load += OnLoad;
         _window.Render += OnRender;
+        _window.Resize += OnResize;
     }
 
     public void Run()
@@ -118,6 +119,11 @@ public class App
         _gl?.UseProgram(_program);
         _gl?.BindVertexArray(_vao);
         _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
+    }
+
+    private void OnResize(Vector2D<int> newSize)
+    {
+        _gl?.Viewport(newSize);
     }
 
     private void OnKeyDown(IKeyboard keyboard, Key key, int keyCode)
