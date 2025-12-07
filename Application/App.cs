@@ -12,7 +12,8 @@ public class App
 
     private GL? _gl;
     private uint _program;
-    private uint _vao;
+    private uint _vao1;
+    private uint _vao2;
 
     public App(string title, int width, int height)
     {
@@ -41,22 +42,39 @@ public class App
         _gl = _window.CreateOpenGL();
         _gl.ClearColor(Color.CornflowerBlue);
 
-        _vao = _gl.GenVertexArray();
-        _gl.BindVertexArray(_vao);
+        const int posLoc = 0;
 
-        var vbo = _gl.GenBuffer();
-        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
+        _vao1 = _gl.GenVertexArray();
+        _gl.BindVertexArray(_vao1);
 
-        var vertices = new[]
+        var vbo1 = _gl.GenBuffer();
+        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo1);
+
+        var vertices1 = new[] { -0.5f, 0.0f, 0.0f, -0.25f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f };
+        fixed (float* bufData = vertices1)
         {
-            -0.5f, 0.0f, 0.0f, -0.25f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f
-        };
-        fixed (float* bufData = vertices)
-        {
-            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), bufData,
+            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices1.Length * sizeof(float)), bufData,
                 BufferUsageARB.StaticDraw);
         }
+
+        _gl.EnableVertexAttribArray(posLoc);
+        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+
+        _vao2 = _gl.GenVertexArray();
+        _gl.BindVertexArray(_vao2);
+
+        var vbo2 = _gl.GenBuffer();
+        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo2);
+
+        var vertices2 = new[] { 0.0f, 0.0f, 0.0f, 0.25f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f };
+        fixed (float* bufData = vertices2)
+        {
+            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices2.Length * sizeof(float)), bufData,
+                BufferUsageARB.StaticDraw);
+        }
+
+        _gl.EnableVertexAttribArray(posLoc);
+        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
 
         const string vertCode = """
                                 #version 330 core
@@ -103,10 +121,6 @@ public class App
         if (lStatus != (int)GLEnum.True)
             throw new Exception("Shader program failed to link: " + _gl.GetProgramInfoLog(_program));
 
-        const int posLoc = 0;
-        _gl.EnableVertexAttribArray(posLoc);
-        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
-
         _gl.DetachShader(_program, vert);
         _gl.DetachShader(_program, frag);
         _gl.DeleteShader(vert);
@@ -121,9 +135,10 @@ public class App
         _gl?.Clear(ClearBufferMask.ColorBufferBit);
 
         _gl?.UseProgram(_program);
-        _gl?.BindVertexArray(_vao);
+        _gl?.BindVertexArray(_vao1);
         _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
-        _gl?.DrawArrays(PrimitiveType.Triangles, 3, 3);
+        _gl?.BindVertexArray(_vao2);
+        _gl?.DrawArrays(PrimitiveType.Triangles, 0, 3);
     }
 
     private void OnResize(Vector2D<int> newSize)
