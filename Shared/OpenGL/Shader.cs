@@ -38,6 +38,12 @@ public class Shader : IDisposable
         _gl.UseProgram(_handle);
     }
 
+    public void SetUniform(string name, float value)
+    {
+        var location = _gl.GetUniformLocation(_handle, name);
+        _gl.Uniform1(location, value);
+    }
+
     public static Shader FromFile(GL gl, string vertPath, string fragPath)
     {
         var vertSource = File.ReadAllText(vertPath);

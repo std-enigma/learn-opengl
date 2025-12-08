@@ -72,6 +72,8 @@ public class App
         }
 
         _shader = Shader.FromFile(_gl, "Resources/default.vert", "Resources/default.frag");
+        _shader.Use();
+        _shader.SetUniform("u_offset", 0.5f);
 
         const int posLoc = 0;
         _gl.EnableVertexAttribArray(posLoc);
@@ -82,6 +84,7 @@ public class App
         _gl.VertexAttribPointer(colorLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float),
             3 * sizeof(float));
 
+        _gl.UseProgram(0);
         _gl.BindVertexArray(0);
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
         _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
