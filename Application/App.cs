@@ -51,9 +51,8 @@ public class App
 
         var vertices = new[]
         {
-            -0.5f, 0.5f, 0.0f, 1.0f, 0.7f, 0.8f,
-            0.5f, 0.5f, 0.0f, 0.7f, 1.0f, 0.9f,
-            -0.5f, -0.5f, 0.0f, 0.8f, 0.9f, 1.0f,
+            0.0f, 0.5f, 0.0f, 1.0f, 0.7f, 0.8f,
+            -0.5f, -0.5f, 0.0f, 0.7f, 1.0f, 0.9f,
             0.5f, -0.5f, 0.0f, 0.9f, 0.8f, 1.0f
         };
         fixed (float* bufData = vertices)
@@ -65,7 +64,7 @@ public class App
         var ebo = _gl.GenBuffer();
         _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo);
 
-        var indices = new[] { 0u, 1u, 2u, 1u, 2u, 3u };
+        var indices = new[] { 0u, 1u, 2u };
         fixed (uint* bufData = indices)
         {
             _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indices.Length * sizeof(uint)), bufData,
@@ -97,7 +96,7 @@ public class App
 
         _shader?.Use();
         _gl.BindVertexArray(_vao);
-        _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
+        _gl.DrawElements(PrimitiveType.Triangles, 3, DrawElementsType.UnsignedInt, (void*)0);
     }
 
     private void OnResize(Vector2D<int> newSize)
