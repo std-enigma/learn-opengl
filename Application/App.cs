@@ -9,7 +9,6 @@ namespace Application;
 public class App
 {
     private readonly IWindow _window;
-    private float _elapsedTimme;
 
     private GL? _gl;
     private uint _program;
@@ -48,7 +47,13 @@ public class App
         var vbo = _gl.GenBuffer();
         _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
 
-        var vertices = new[] { -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
+        var vertices = new[]
+        {
+            -0.5f, 0.5f, 0.0f, 1.0f, 0.7f, 0.8f,
+            0.5f, 0.5f, 0.0f, 0.7f, 1.0f, 0.9f,
+            -0.5f, -0.5f, 0.0f, 0.8f, 0.9f, 1.0f,
+            0.5f, -0.5f, 0.0f, 0.9f, 0.8f, 1.0f
+        };
         fixed (float* bufData = vertices)
         {
             _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), bufData,
@@ -69,10 +74,14 @@ public class App
                                 #version 330 core
 
                                 layout(location = 0) in vec3 Position;
+                                layout(location = 1) in vec3 Color;
+
+                                out vec3 VertexColor;
 
                                 void main()
                                 {
                                     gl_Position = vec4(Position, 1.0);
+                                    VertexColor = Color;
                                 }
                                 """;
 
@@ -86,13 +95,13 @@ public class App
         const string fragCode = """
                                 #version 330 core
 
-                                uniform vec3 uColor;
+                                in vec3 VertexColor;
 
                                 out vec4 FragColor;
 
                                 void main()
                                 {
-                                    FragColor = vec4(uColor, 1.0);
+                                    FragColor = vec4(VertexColor, 1.0);
                                 }
                                 """;
 
@@ -113,7 +122,12 @@ public class App
 
         const int posLoc = 0;
         _gl.EnableVertexAttribArray(posLoc);
-        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+
+        const int colorLoc = 1;
+        _gl.EnableVertexAttribArray(colorLoc);
+        _gl.VertexAttribPointer(colorLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float),
+            3 * sizeof(float));
 
         _gl.DetachShader(_program, vert);
         _gl.DetachShader(_program, frag);
@@ -130,13 +144,9 @@ public class App
         if (_gl is null)
             return;
 
-        _elapsedTimme += (float)deltaTime;
         _gl.Clear(ClearBufferMask.ColorBufferBit);
 
         _gl.UseProgram(_program);
-        var uniformLocation = _gl.GetUniformLocation(_program, "uColor");
-        _gl.Uniform3(uniformLocation, 1.0f, MathF.Sin(_elapsedTimme), MathF.Cos(_elapsedTimme));
-
         _gl.BindVertexArray(_vao);
         _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
     }
