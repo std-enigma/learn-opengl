@@ -9,6 +9,7 @@ namespace Application;
 public class App
 {
     private readonly IWindow _window;
+    private float _elapsedTimme;
 
     private GL? _gl;
     private uint _program;
@@ -85,11 +86,13 @@ public class App
         const string fragCode = """
                                 #version 330 core
 
+                                uniform vec3 uColor;
+
                                 out vec4 FragColor;
 
                                 void main()
                                 {
-                                    FragColor = vec4(0.4, 0.3, 0.6, 1.0);
+                                    FragColor = vec4(uColor, 1.0);
                                 }
                                 """;
 
@@ -124,11 +127,18 @@ public class App
 
     private unsafe void OnRender(double deltaTime)
     {
-        _gl?.Clear(ClearBufferMask.ColorBufferBit);
+        if (_gl is null)
+            return;
 
-        _gl?.UseProgram(_program);
-        _gl?.BindVertexArray(_vao);
-        _gl?.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
+        _elapsedTimme += (float)deltaTime;
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
+
+        _gl.UseProgram(_program);
+        var uniformLocation = _gl.GetUniformLocation(_program, "uColor");
+        _gl.Uniform3(uniformLocation, 1.0f, MathF.Sin(_elapsedTimme), MathF.Cos(_elapsedTimme));
+
+        _gl.BindVertexArray(_vao);
+        _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
     }
 
     private void OnResize(Vector2D<int> newSize)
