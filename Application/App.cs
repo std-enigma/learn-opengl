@@ -1,9 +1,9 @@
 using System.Drawing;
+using Shared.OpenGL;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
-using Shader = Shared.OpenGL.Shader;
 
 namespace Application;
 
@@ -13,8 +13,8 @@ public class App
 
     private GL? _gl;
 
-    private Shader? _shader;
-    private uint _vao;
+    private ShaderObject? _shader;
+    private VertexArrayObject<float, uint>? _vao;
 
     public App(string title, int width, int height)
     {
@@ -34,7 +34,7 @@ public class App
         _window.Run();
     }
 
-    private unsafe void OnLoad()
+    private void OnLoad()
     {
         var input = _window.CreateInput();
         foreach (var keyboard in input.Keyboards)
@@ -43,46 +43,26 @@ public class App
         _gl = _window.CreateOpenGL();
         _gl.ClearColor(Color.CornflowerBlue);
 
-        _vao = _gl.GenVertexArray();
-        _gl.BindVertexArray(_vao);
-
-        var vbo = _gl.GenBuffer();
-        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
-
         var vertices = new[]
         {
             0.0f, 0.5f, 0.0f, 1.0f, 0.7f, 0.8f,
             -0.5f, -0.5f, 0.0f, 0.7f, 1.0f, 0.9f,
             0.5f, -0.5f, 0.0f, 0.9f, 0.8f, 1.0f
         };
-        fixed (float* bufData = vertices)
-        {
-            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(vertices.Length * sizeof(float)), bufData,
-                BufferUsageARB.StaticDraw);
-        }
-
-        var ebo = _gl.GenBuffer();
-        _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo);
+        var vbo = new BufferObject<float>(_gl, BufferTargetARB.ArrayBuffer, vertices);
 
         var indices = new[] { 0u, 1u, 2u };
-        fixed (uint* bufData = indices)
-        {
-            _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indices.Length * sizeof(uint)), bufData,
-                BufferUsageARB.StaticDraw);
-        }
+        var ebo = new BufferObject<uint>(_gl, BufferTargetARB.ElementArrayBuffer, indices);
 
-        _shader = Shader.FromFile(_gl, "Resources/default.vert", "Resources/default.frag");
-        _shader.Use();
-        _shader.SetUniform("u_offset", 0.5f);
+        _vao = new VertexArrayObject<float, uint>(_gl, vbo, ebo);
+
+        _shader = ShaderObject.FromFile(_gl, "Resources/default.vert", "Resources/default.frag");
 
         const int posLoc = 0;
-        _gl.EnableVertexAttribArray(posLoc);
-        _gl.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        _vao.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, 6, 0);
 
         const int colorLoc = 1;
-        _gl.EnableVertexAttribArray(colorLoc);
-        _gl.VertexAttribPointer(colorLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float),
-            3 * sizeof(float));
+        _vao.VertexAttribPointer(colorLoc, 3, VertexAttribPointerType.Float, 6, 3);
 
         _gl.UseProgram(0);
         _gl.BindVertexArray(0);
@@ -98,7 +78,7 @@ public class App
         _gl.Clear(ClearBufferMask.ColorBufferBit);
 
         _shader?.Use();
-        _gl.BindVertexArray(_vao);
+        _vao?.Bind();
         _gl.DrawElements(PrimitiveType.Triangles, 3, DrawElementsType.UnsignedInt, (void*)0);
     }
 
