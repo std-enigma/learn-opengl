@@ -2,12 +2,12 @@ using Silk.NET.OpenGL;
 
 namespace Shared.OpenGL;
 
-public class Shader : IDisposable
+public class ShaderObject : IDisposable
 {
     private readonly GL _gl;
     private readonly uint _handle;
 
-    private Shader(GL gl, string vertCode, string fragCode)
+    private ShaderObject(GL gl, string vertCode, string fragCode)
     {
         _gl = gl;
         _handle = gl.CreateProgram();
@@ -44,11 +44,11 @@ public class Shader : IDisposable
         _gl.Uniform1(location, value);
     }
 
-    public static Shader FromFile(GL gl, string vertPath, string fragPath)
+    public static ShaderObject FromFile(GL gl, string vertPath, string fragPath)
     {
         var vertSource = File.ReadAllText(vertPath);
         var fragSource = File.ReadAllText(fragPath);
-        return new Shader(gl, vertSource, fragSource);
+        return new ShaderObject(gl, vertSource, fragSource);
     }
 
     private uint LoadShader(ShaderType type, string source)
@@ -68,7 +68,7 @@ public class Shader : IDisposable
         _gl.DeleteProgram(_handle);
     }
 
-    ~Shader()
+    ~ShaderObject()
     {
         ReleaseUnmanagedResources();
     }
